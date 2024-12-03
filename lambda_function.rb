@@ -13,6 +13,55 @@ module LambdaFunction
 
     FavoriteArtist = ['OZworld', '槇原敬之']
 
+    
+    def self.get_data(response)
+      doc = Nokogiri::HTML.parse(response.body, nil, 'utf-8')
+      data = []
+      doc.css('.artistSectionLine01')&.each do |item|
+        item.css('li').each do |li|
+          data << {
+            'title' => li.css('.title a').text || '',
+            'artist' => li.css('.artist a').text || '',
+          }
+        end
+      end
+
+      data
+    end
+
+    # @return [Nokogiri::HTML::Document]
+    def self.fetch_data(page)
+      5.times do |i| # 5回駄目なら打ち切り
+        sleep(INTERVAL_SEC)
+
+        puts "page:#{page} fetching"
+        uri = URI.parse("#{ROOT_URL}&page=#{page}")
+        http = Net::HTTP.new(uri.host, uri.port)
+        http.use_ssl = uri.scheme == 'https'
+        headers = {
+          'Referer' => ROOT_URL,
+          'User-Agent' => USER_AGENT
+        }
+        http.open_timeout = 60
+        http.read_timeout = 60
+        response = http.get(uri.request_uri, headers)
+
+        if response.code == "200"
+          return response
+        end
+
+        puts "crawling page:#{page} from outline failed"
+        sleep(INTERVAL_SEC + i * 600) # 待つ時間を段階的に延ばしてみるS
+      end
+      raise 'detail page crawling blocked'
+    end
+
+    def self.last_page?(page, response)
+      doc = Nokogiri::HTML.parse(response.body, nil, 'utf-8')
+      last_page_number = doc.css('.pager li').last.text
+      page >= last_page_number.to_i
+    end
+
     def self.process(event:, context:)
         sns = Aws::SNS::Client.new(region: 'ap-northeast-1') # 適切なリージョンを指定
         page = 1
@@ -20,10 +69,11 @@ module LambdaFunction
         loop do
           begin
             response = fetch_data(page)
+            puts "page:#{page} fetched"
             break if response.code != "200" || last_page?(page, response)
             data << get_data(response)
           rescue StandardError => e 
-            puts 'Error: #{e.message}'
+            puts "Error: #{e.message}"
           end
           page += 1
         end
@@ -32,6 +82,7 @@ module LambdaFunction
 
         favorite_artist = data.select { |item| FavoriteArtist.include?(item['artist']) }
         text = favorite_artist.map { |item| "#{item['title']} - #{item['artist']}" }.join("\n")
+        puts text
         params = {
           topic_arn: 'arn:aws:sns:ap-northeast-1:423513201913:practice', # 適切なトピックARNを指定
           message: 'Favorite Artistの新着情報があります\n' + text,
@@ -40,58 +91,8 @@ module LambdaFunction
         begin
           sns.publish(params)
         rescue StandardError => e
-          puts 'Error: #{e.message}'
+          puts "Error: #{e.message}"
         end
     end
-
-    private
-
-      def get_data(response)
-        doc = Nokogiri::HTML.parse(response.body, nil, 'utf-8')
-        data = []
-        doc.css('.artistSectionLine01')&.each do |item|
-          item.css('li').each do |li|
-            data << {
-              'title' => li.css('.title a').text || '',
-              'artist' => li.css('.artist a').text || '',
-            }
-          end
-        end
-
-        data
-      end
-
-      # @return [Nokogiri::HTML::Document]
-      def fetch_data(page)
-        5.times do |i| # 5回駄目なら打ち切り
-          sleep(INTERVAL_SEC)
-
-          puts "page:#{page} fetching"
-          uri = URI.parse("#{ROOT_URL}&page=#{page}")
-          http = Net::HTTP.new(uri.host, uri.port)
-          http.use_ssl = uri.scheme == 'https'
-          headers = {
-            'Referer' => ROOT_URL,
-            'User-Agent' => USER_AGENT
-          }
-          http.open_timeout = 60
-          http.read_timeout = 60
-          response = http.get(uri.request_uri, headers)
-
-          if response.code == "200"
-            return response
-          end
-
-          puts "crawling page:#{page} from outline failed"
-          sleep(INTERVAL_SEC + i * 600) # 待つ時間を段階的に延ばしてみるS
-        end
-        raise 'detail page crawling blocked'
-      end
-
-      def last_page?(page, response)
-        doc = Nokogiri::HTML.parse(response.body, nil, 'utf-8')
-        last_page_number = doc.css('.pager li').last.text
-        page >= last_page_number.to_i
-      end
   end
 end
