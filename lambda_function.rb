@@ -10,7 +10,7 @@ module LambdaFunction
     USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1.2 Safari/605.1.15' # Mac Safari
     ROOT_URL = 'https://tower.jp/search/advanced/item/search?genre=01&subgenre=01&salesDiv=Reserv&echandling=y&recondition=True&format=114'
     REFERRER = 'https://tower.jp/search/advanced/item/search?detailSearch=on&detailSearchType=item&displayAllTab=off&genre=1&subgenre=1&sort=RANK&echandling=y&discographyTabMode=1&kid=plkpcanlgsrch01&format=114&recondition=True'
-    FavoriteArtist = ['OZworld', '槇原敬之']
+    FavoriteArtist = ['OZworld', '藤井 風', '宇多田ヒカル', 'Vaundy', 'あいみょん', 'コシュニエ', '妖艶金魚', '菅田将暉', 'ヨルシカ', '羊文学', 'aiko', 'majiko', 'ブランデー戦記', 'iri', 'milet', 'dodo', 'Hump Back', '久保田利伸', 'ちゃんみな', 'ねぐせ', 'never young beach', 'indigo la End', 'BIGBANG', 'チョーキューメイ', 'THE ALFEE']
     
     def self.get_data(response)
       doc = Nokogiri::HTML.parse(response.body, nil, 'utf-8')
