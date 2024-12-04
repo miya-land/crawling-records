@@ -10,7 +10,7 @@ module LambdaFunction
     USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1.2 Safari/605.1.15' # Mac Safari
     ROOT_URL = 'https://tower.jp/search/advanced/item/search?genre=01&subgenre=01&salesDiv=Reserv&echandling=y&recondition=True&format=114'
     REFERRER = 'https://tower.jp/search/advanced/item/search?detailSearch=on&detailSearchType=item&displayAllTab=off&genre=1&subgenre=1&sort=RANK&echandling=y&discographyTabMode=1&kid=plkpcanlgsrch01&format=114&recondition=True'
-    FavoriteArtist = ['OZworld', '槇原敬之', 'BLANKEY JET CITY']
+    FavoriteArtist = ['OZworld', '槇原敬之']
     
     def self.get_data(response)
       doc = Nokogiri::HTML.parse(response.body, nil, 'utf-8')
@@ -82,9 +82,17 @@ module LambdaFunction
         favorite_artist = data.select { |item| FavoriteArtist.include?(item['artist']) }
         text = favorite_artist.map { |item| "#{item['title']} - #{item['artist']}" }.join("\n")
         puts text
+        message = <<~TEXT
+          お気に入りのアーティストのレコードが予約開始されました！
+          #{text}
+
+          以下のリンクから詳細を確認してください。
+          #{ROOT_URL}
+        TEXT
+
         params = {
           topic_arn: 'arn:aws:sns:ap-northeast-1:423513201913:practice', # 適切なトピックARNを指定
-          message: 'お気に入りアーティストのレコード予約情報があります' + '\n' + text,
+          message: message,
           subject: 'レコード予約情報'
         }
         begin
