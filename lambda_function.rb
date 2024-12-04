@@ -6,13 +6,11 @@ require 'aws-sdk-sns'
 
 module LambdaFunction
   class Handler
-
     INTERVAL_SEC = 3
     USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1.2 Safari/605.1.15' # Mac Safari
     ROOT_URL = 'https://tower.jp/search/advanced/item/search?genre=01&subgenre=01&salesDiv=Reserv&echandling=y&recondition=True&format=114'
-
-    FavoriteArtist = ['OZworld', '槇原敬之']
-
+    REFERRER = 'https://tower.jp/search/advanced/item/search?detailSearch=on&detailSearchType=item&displayAllTab=off&genre=1&subgenre=1&sort=RANK&echandling=y&discographyTabMode=1&kid=plkpcanlgsrch01&format=114&recondition=True'
+    FavoriteArtist = ['OZworld', '槇原敬之', 'BLANKEY JET CITY']
     
     def self.get_data(response)
       doc = Nokogiri::HTML.parse(response.body, nil, 'utf-8')
@@ -39,7 +37,7 @@ module LambdaFunction
         http = Net::HTTP.new(uri.host, uri.port)
         http.use_ssl = uri.scheme == 'https'
         headers = {
-          'Referer' => ROOT_URL,
+          'Referer' => REFERRER,
           'User-Agent' => USER_AGENT
         }
         http.open_timeout = 60
@@ -86,8 +84,8 @@ module LambdaFunction
         puts text
         params = {
           topic_arn: 'arn:aws:sns:ap-northeast-1:423513201913:practice', # 適切なトピックARNを指定
-          message: 'Favorite Artistの新着情報があります\n' + text,
-          subject: 'Test Message'
+          message: 'お気に入りアーティストのレコード予約情報があります' + '\n' + text,
+          subject: 'レコード予約情報'
         }
         begin
           sns.publish(params)
