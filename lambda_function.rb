@@ -74,6 +74,7 @@ module LambdaFunction
             data << get_data(response)
           rescue StandardError => e 
             puts "Error: #{e.message}"
+            break
           end
           page += 1
         end
