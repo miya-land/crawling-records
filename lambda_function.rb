@@ -91,7 +91,7 @@ module LambdaFunction
         TEXT
 
         params = {
-          topic_arn: 'arn:aws:sns:ap-northeast-1:423513201913:practice', # 適切なトピックARNを指定
+          topic_arn: ENV["topic_arn"], # 適切なトピックARNを指定
           message: message,
           subject: 'レコード予約情報'
         }
